@@ -4,7 +4,10 @@ const DEFAULT_SETTINGS = {
     youtubeApiKey: '',
     dateFormat: 'YYYY-MM-DD',
     authorPropertyName: 'Author', // Default Author property name
-    datePropertyName: 'Date'   // Default Date property name
+    datePropertyName: 'Date',   // Default Date property name
+    enableRenameNote: true,     // 新增：启用/禁用 自动重命名笔记 功能，默认启用
+    enableUpdateAuthor: true,   // 新增：启用/禁用 更新作者信息 功能，默认启用
+    enableUpdateDate: true     // 新增：启用/禁用 更新日期信息 功能，默认启用
 };
 
 class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
@@ -20,7 +23,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         containerEl.createEl('h2', { text: 'YouTube Metadata Fetcher Settings' });
 
-        // API Key Setting (No changes)
+        // API Key Setting
         new obsidian.Setting(containerEl)
             .setName('YouTube API Key')
             .setDesc('Enter your YouTube Data API v3 key here.')
@@ -33,19 +36,19 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Date Format Setting (No changes)
+        // Date Format Setting
         new obsidian.Setting(containerEl)
             .setName('Date Format')
             .setDesc('Choose the format for the Date in frontmatter.')
             .addDropdown(dropdown => {
-                const today = new Date(); // Get today's date
+                const today = new Date();
                 const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, pad with 0
-                const day = String(today.getDate()).padStart(2, '0');      // Pad day with 0
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
 
                 dropdown
                     .addOptions({
-                        'YYYY-MM-DD': `YYYY-MM-DD (${year}-${month}-${day})`, // Added example with today's date
+                        'YYYY-MM-DD': `YYYY-MM-DD (${year}-${month}-${day})`,
                         'MM-DD-YYYY': `MM-DD-YYYY (${month}-${day}-${year})`,
                         'DD-MM-YYYY': `DD-MM-YYYY (${day}-${month}-${year})`,
                         'YYYY/MM/DD': `YYYY/MM/DD (${year}/${month}/${day})`,
@@ -61,29 +64,37 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     });
             });
 
-        // ---  New Settings for Custom Property Names ---
-
+        // Feature Toggles
         new obsidian.Setting(containerEl)
-            .setName('Author Property Name')
-            .setDesc('Customize the frontmatter property name for video author/channel.')
-            .addText(text => text
-                .setPlaceholder('e.g., 作者, Author, Channel')
-                .setValue(this.plugin.settings.authorPropertyName || '作者') // Default value
+            .setName('Enable Note Renaming')
+            .setDesc('Turn this on to automatically rename the note to the video title.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableRenameNote)
                 .onChange(async (value) => {
-                    console.log('Author Property Name: ' + value);
-                    this.plugin.settings.authorPropertyName = value;
+                    console.log('Enable Rename Note: ' + value);
+                    this.plugin.settings.enableRenameNote = value;
                     await this.plugin.saveSettings();
                 }));
 
         new obsidian.Setting(containerEl)
-            .setName('Date Property Name')
-            .setDesc('Customize the frontmatter property name for video upload date.')
-            .addText(text => text
-                .setPlaceholder('e.g., 日期, Date, Upload Date')
-                .setValue(this.plugin.settings.datePropertyName || '日期') // Default value
+            .setName('Enable Author Update')
+            .setDesc('Turn this on to automatically update the "Author" property in frontmatter.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateAuthor)
                 .onChange(async (value) => {
-                    console.log('Date Property Name: ' + value);
-                    this.plugin.settings.datePropertyName = value;
+                    console.log('Enable Update Author: ' + value);
+                    this.plugin.settings.enableUpdateAuthor = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('Enable Date Update')
+            .setDesc('Turn this on to automatically update the "Date" property in frontmatter.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateDate)
+                .onChange(async (value) => {
+                    console.log('Enable Update Date: ' + value);
+                    this.plugin.settings.enableUpdateDate = value;
                     await this.plugin.saveSettings();
                 }));
     }
@@ -152,58 +163,67 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
 
                         new obsidian.Notice(`Data fetched! Title: ${videoTitle}, Author: ${channelTitle}, Date: ${uploadDate}`);
 
-                        // --- Step 3: New Code to Update Note ---
+                        // --- Step 3: New Code to Update Note (功能开关控制) ---
 
                         // 9. Sanitize video title for filename
                         const sanitizedTitle = this.sanitizeFilename(videoTitle);
                         const newFilename = sanitizedTitle + '.md';
 
-                        // 10. Rename the note file
-                        try {
-                            await this.app.fileManager.renameFile(activeFile, newFilename);
-                            new obsidian.Notice(`Note renamed to: ${sanitizedTitle}`);
-                        } catch (renameError) {
-                            console.error('Error renaming file:', renameError);
-                            new obsidian.Notice(`Error renaming note. See console for details.`);
+                        // 10. Rename the note file (根据开关判断是否执行)
+                        if (this.settings.enableRenameNote) {
+                            try {
+                                await this.app.fileManager.renameFile(activeFile, newFilename);
+                                new obsidian.Notice(`Note renamed to: ${sanitizedTitle}`);
+                            } catch (renameError) {
+                                console.error('Error renaming file:', renameError);
+                                new obsidian.Notice(`Error renaming note. See console for details.`);
+                            }
                         }
 
-                        // 11. Update frontmatter with Author and Date
-                        try {
-                            await this.app.fileManager.processFrontMatter(activeFile, (fm) => {
-                                const authorPropertyName = this.settings.authorPropertyName; // Get custom author property name
-                                const datePropertyName = this.settings.datePropertyName;     // Get custom date property name
+                        // 11. Update frontmatter with Author and Date (根据开关判断是否执行)
+                        if (this.settings.enableUpdateAuthor || this.settings.enableUpdateDate) {
+                            try {
+                                await this.app.fileManager.processFrontMatter(activeFile, (fm) => {
+                                    const authorPropertyName = this.settings.authorPropertyName;
+                                    const datePropertyName = this.settings.datePropertyName;
 
-                                fm[authorPropertyName] = channelTitle; // Use custom author property name
-                                
-                                // --- 日期格式化 ---
-                                const dateFormat = this.settings.dateFormat; // 获取用户设置的日期格式
-                                let formattedDate = uploadDate; // 默认使用 ISO 8601 格式 (如果用户选择 "Auto" 或其他未知格式)
+                                    if (this.settings.enableUpdateAuthor) {
+                                        fm[authorPropertyName] = channelTitle;
+                                    }
 
-                                if (dateFormat === 'YYYY-MM-DD') {
-                                    formattedDate = uploadDate.substring(0, 10); // YYYY-MM-DD
-                                } else if (dateFormat === 'MM-DD-YYYY') {
-                                    const dateParts = uploadDate.substring(0, 10).split('-');
-                                    formattedDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`; // MM-DD-YYYY
-                                } else if (dateFormat === 'DD-MM-YYYY') {
-                                    const dateParts = uploadDate.substring(0, 10).split('-');
-                                    formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`; // DD-MM-YYYY
-                                } else if (dateFormat === 'YYYY/MM/DD') {
-                                    formattedDate = uploadDate.substring(0, 10).replace(/-/g, '/'); // YYYY/MM/DD
-                                } else if (dateFormat === 'MM/DD/YYYY') {
-                                    const dateParts = uploadDate.substring(0, 10).split('-');
-                                    formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`; // MM/DD/YYYY
-                                } else if (dateFormat === 'DD/MM/YYYY') {
-                                    const dateParts = uploadDate.substring(0, 10).split('-');
-                                    formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; // DD/MM/YYYY
-                                } // "auto" 选项我们默认就使用 ISO 8601 格式，所以不需要额外处理
+                                    // --- 日期格式化 ---
+                                    const dateFormat = this.settings.dateFormat;
+                                    let formattedDate = uploadDate;
 
-                                fm[datePropertyName] = formattedDate; // 使用自定义日期属性名和格式化后的日期
-                            });
-                            new obsidian.Notice(`Frontmatter updated with custom property names.`);
+                                    if (dateFormat === 'YYYY-MM-DD') {
+                                        formattedDate = uploadDate.substring(0, 10);
+                                    } else if (dateFormat === 'MM-DD-YYYY') {
+                                        const dateParts = uploadDate.substring(0, 10).split('-');
+                                        formattedDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`;
+                                    } else if (dateFormat === 'DD-MM-YYYY') {
+                                        const dateParts = uploadDate.substring(0, 10).split('-');
+                                        formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                                    } else if (dateFormat === 'YYYY/MM/DD') {
+                                        formattedDate = uploadDate.substring(0, 10).replace(/-/g, '/');
+                                    } else if (dateFormat === 'MM/DD/YYYY') {
+                                        const dateParts = uploadDate.substring(0, 10).split('-');
+                                        formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+                                    } else if (dateFormat === 'DD/MM/YYYY') {
+                                        const dateParts = uploadDate.substring(0, 10).split('-');
+                                        formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                                    }
 
-                        } catch (frontmatterError) {
-                            console.error('Error updating frontmatter:', frontmatterError);
-                            new obsidian.Notice(`Error updating frontmatter. See console for details.`);
+                                    if (this.settings.enableUpdateDate) {
+                                        fm[datePropertyName] = formattedDate;
+                                    }
+                                });
+                                new obsidian.Notice(`Frontmatter updated based on enabled settings.`);
+                            } catch (frontmatterError) {
+                                console.error('Error updating frontmatter:', frontmatterError);
+                                new obsidian.Notice(`Error updating frontmatter. See console for details.`);
+                            }
+                        } else {
+                            new obsidian.Notice("Note title renamed, but frontmatter update skipped as both 'Update Author' and 'Update Date' are disabled.");
                         }
 
                     } else {
