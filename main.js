@@ -1,7 +1,10 @@
 const obsidian = require('obsidian');
 
 const DEFAULT_SETTINGS = {
-    youtubeApiKey: ''
+    youtubeApiKey: '',
+    dateFormat: 'YYYY-MM-DD',
+    authorPropertyName: 'Author', // Default Author property name
+    datePropertyName: 'Date'   // Default Date property name
 };
 
 class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
@@ -17,6 +20,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         containerEl.createEl('h2', { text: 'YouTube Metadata Fetcher Settings' });
 
+        // API Key Setting (No changes)
         new obsidian.Setting(containerEl)
             .setName('YouTube API Key')
             .setDesc('Enter your YouTube Data API v3 key here.')
@@ -24,8 +28,62 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                 .setPlaceholder('Enter your API key')
                 .setValue(this.plugin.settings.youtubeApiKey)
                 .onChange(async (value) => {
-                    console.log('API Key: ' + value); // For debugging - you can remove this later
+                    console.log('API Key: ' + value);
                     this.plugin.settings.youtubeApiKey = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Date Format Setting (No changes)
+        new obsidian.Setting(containerEl)
+            .setName('Date Format')
+            .setDesc('Choose the format for the Date in frontmatter.')
+            .addDropdown(dropdown => {
+                const today = new Date(); // Get today's date
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, pad with 0
+                const day = String(today.getDate()).padStart(2, '0');      // Pad day with 0
+
+                dropdown
+                    .addOptions({
+                        'YYYY-MM-DD': `YYYY-MM-DD (${year}-${month}-${day})`, // Added example with today's date
+                        'MM-DD-YYYY': `MM-DD-YYYY (${month}-${day}-${year})`,
+                        'DD-MM-YYYY': `DD-MM-YYYY (${day}-${month}-${year})`,
+                        'YYYY/MM/DD': `YYYY/MM/DD (${year}/${month}/${day})`,
+                        'MM/DD/YYYY': `MM/DD/YYYY (${month}/${day}/${year})`,
+                        'DD/MM/YYYY': `DD/MM/YYYY (${day}/${month}/${year})`,
+                        'auto': 'Auto (ISO 8601 - As received from YouTube)'
+                    })
+                    .setValue(this.plugin.settings.dateFormat || 'YYYY-MM-DD')
+                    .onChange(async (value) => {
+                        console.log('Date Format: ' + value);
+                        this.plugin.settings.dateFormat = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // ---  New Settings for Custom Property Names ---
+
+        new obsidian.Setting(containerEl)
+            .setName('Author Property Name')
+            .setDesc('Customize the frontmatter property name for video author/channel.')
+            .addText(text => text
+                .setPlaceholder('e.g., 作者, Author, Channel')
+                .setValue(this.plugin.settings.authorPropertyName || '作者') // Default value
+                .onChange(async (value) => {
+                    console.log('Author Property Name: ' + value);
+                    this.plugin.settings.authorPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('Date Property Name')
+            .setDesc('Customize the frontmatter property name for video upload date.')
+            .addText(text => text
+                .setPlaceholder('e.g., 日期, Date, Upload Date')
+                .setValue(this.plugin.settings.datePropertyName || '日期') // Default value
+                .onChange(async (value) => {
+                    console.log('Date Property Name: ' + value);
+                    this.plugin.settings.datePropertyName = value;
                     await this.plugin.saveSettings();
                 }));
     }
@@ -92,13 +150,13 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                         const channelTitle = videoItem.snippet.channelTitle;
                         const uploadDate = videoItem.snippet.publishedAt; // ISO 8601 format
 
-                        new obsidian.Notice(`Data fetched! Title: ${videoTitle}, Author: ${channelTitle}, Date: ${uploadDate}`); // Test Notice - we will replace this
+                        new obsidian.Notice(`Data fetched! Title: ${videoTitle}, Author: ${channelTitle}, Date: ${uploadDate}`);
 
                         // --- Step 3: New Code to Update Note ---
 
                         // 9. Sanitize video title for filename
                         const sanitizedTitle = this.sanitizeFilename(videoTitle);
-                        const newFilename = sanitizedTitle + '.md'; // Add .md extension
+                        const newFilename = sanitizedTitle + '.md';
 
                         // 10. Rename the note file
                         try {
@@ -112,11 +170,36 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                         // 11. Update frontmatter with Author and Date
                         try {
                             await this.app.fileManager.processFrontMatter(activeFile, (fm) => {
-                                fm['作者'] = channelTitle;
-                                // Format date to YYYY-MM-DD (or just take the date part of ISO string)
-                                fm['日期'] = uploadDate.substring(0, 10); // Get YYYY-MM-DD part
+                                const authorPropertyName = this.settings.authorPropertyName; // Get custom author property name
+                                const datePropertyName = this.settings.datePropertyName;     // Get custom date property name
+
+                                fm[authorPropertyName] = channelTitle; // Use custom author property name
+                                
+                                // --- 日期格式化 ---
+                                const dateFormat = this.settings.dateFormat; // 获取用户设置的日期格式
+                                let formattedDate = uploadDate; // 默认使用 ISO 8601 格式 (如果用户选择 "Auto" 或其他未知格式)
+
+                                if (dateFormat === 'YYYY-MM-DD') {
+                                    formattedDate = uploadDate.substring(0, 10); // YYYY-MM-DD
+                                } else if (dateFormat === 'MM-DD-YYYY') {
+                                    const dateParts = uploadDate.substring(0, 10).split('-');
+                                    formattedDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`; // MM-DD-YYYY
+                                } else if (dateFormat === 'DD-MM-YYYY') {
+                                    const dateParts = uploadDate.substring(0, 10).split('-');
+                                    formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`; // DD-MM-YYYY
+                                } else if (dateFormat === 'YYYY/MM/DD') {
+                                    formattedDate = uploadDate.substring(0, 10).replace(/-/g, '/'); // YYYY/MM/DD
+                                } else if (dateFormat === 'MM/DD/YYYY') {
+                                    const dateParts = uploadDate.substring(0, 10).split('-');
+                                    formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`; // MM/DD/YYYY
+                                } else if (dateFormat === 'DD/MM/YYYY') {
+                                    const dateParts = uploadDate.substring(0, 10).split('-');
+                                    formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; // DD/MM/YYYY
+                                } // "auto" 选项我们默认就使用 ISO 8601 格式，所以不需要额外处理
+
+                                fm[datePropertyName] = formattedDate; // 使用自定义日期属性名和格式化后的日期
                             });
-                            new obsidian.Notice(`Frontmatter updated with Author and Date.`);
+                            new obsidian.Notice(`Frontmatter updated with custom property names.`);
 
                         } catch (frontmatterError) {
                             console.error('Error updating frontmatter:', frontmatterError);
@@ -156,7 +239,7 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
         const match = url.match(videoIdRegex);
         return match ? match[1] : null;
     }
-    
+
     sanitizeFilename(title) {
         // Remove or replace characters that are invalid in filenames
         return title.replace(/[/\\?%*:|"<>]/g, '-').trim(); // Replace with dash, trim whitespace
