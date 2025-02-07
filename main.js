@@ -1,13 +1,26 @@
 const obsidian = require('obsidian');
 
 const DEFAULT_SETTINGS = {
+    // API Configuration
     youtubeApiKey: '',
+
+    // Date Formatting
     dateFormat: 'YYYY-MM-DD',
-    authorPropertyName: 'Author', // Default Author property name
-    datePropertyName: 'Date',   // Default Date property name
-    enableRenameNote: true,     // 新增：启用/禁用 自动重命名笔记 功能，默认启用
-    enableUpdateAuthor: true,   // 新增：启用/禁用 更新作者信息 功能，默认启用
-    enableUpdateDate: true     // 新增：启用/禁用 更新日期信息 功能，默认启用
+
+    // Property Names
+    authorPropertyName: 'Author',
+    datePropertyName: 'Date',
+    descriptionPropertyName: 'description',
+    durationPropertyName: 'duration',
+
+    // Feature Toggles
+    enableRenameNote: true,
+    enableUpdateAuthor: true,
+    enableUpdateDate: true,
+    enableUpdateDescription: false,
+    enableUpdateDuration: false,
+    enableAddDescriptionToNoteContent: false // New: Toggle for adding description to note content, default off
+
 };
 
 class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
@@ -27,14 +40,16 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
         new obsidian.Setting(containerEl)
             .setName('YouTube API Key')
             .setDesc('Enter your YouTube Data API v3 key here.')
-            .addText(text => text
-                .setPlaceholder('Enter your API key')
-                .setValue(this.plugin.settings.youtubeApiKey)
-                .onChange(async (value) => {
-                    console.log('API Key: ' + value);
-                    this.plugin.settings.youtubeApiKey = value;
-                    await this.plugin.saveSettings();
-                }));
+            .addText(text => {
+                text
+                    .setPlaceholder('Enter your API key')
+                    .setValue(this.plugin.settings.youtubeApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.youtubeApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+                text.inputEl.type = 'password'; // This line hides the API key
+            });
 
         // Date Format Setting
         new obsidian.Setting(containerEl)
@@ -58,11 +73,34 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     })
                     .setValue(this.plugin.settings.dateFormat || 'YYYY-MM-DD')
                     .onChange(async (value) => {
-                        console.log('Date Format: ' + value);
                         this.plugin.settings.dateFormat = value;
                         await this.plugin.saveSettings();
                     });
             });
+
+        // Author Property Name Setting
+        new obsidian.Setting(containerEl)
+            .setName('Author Property Name')
+            .setDesc('Customize the frontmatter property name for video author/channel.')
+            .addText(text => text
+                .setPlaceholder('e.g., 作者, Author, Creator')
+                .setValue(this.plugin.settings.authorPropertyName || 'Author')
+                .onChange(async (value) => {
+                    this.plugin.settings.authorPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Date Property Name Setting
+        new obsidian.Setting(containerEl)
+            .setName('Date Property Name')
+            .setDesc('Customize the frontmatter property name for video upload date.')
+            .addText(text => text
+                .setPlaceholder('e.g., 日期, Date, Uploaded')
+                .setValue(this.plugin.settings.datePropertyName || 'Date')
+                .onChange(async (value) => {
+                    this.plugin.settings.datePropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
 
         // Feature Toggles
         new obsidian.Setting(containerEl)
@@ -71,7 +109,6 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableRenameNote)
                 .onChange(async (value) => {
-                    console.log('Enable Rename Note: ' + value);
                     this.plugin.settings.enableRenameNote = value;
                     await this.plugin.saveSettings();
                 }));
@@ -82,7 +119,6 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableUpdateAuthor)
                 .onChange(async (value) => {
-                    console.log('Enable Update Author: ' + value);
                     this.plugin.settings.enableUpdateAuthor = value;
                     await this.plugin.saveSettings();
                 }));
@@ -93,8 +129,60 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableUpdateDate)
                 .onChange(async (value) => {
-                    console.log('Enable Update Date: ' + value);
                     this.plugin.settings.enableUpdateDate = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Description Settings
+        new obsidian.Setting(containerEl)
+            .setName('Enable Description Update')
+            .setDesc('Turn this on to automatically update the "Description" property in frontmatter with video description.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateDescription)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableUpdateDescription = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('Description Property Name')
+            .setDesc('Customize the frontmatter property name for video description.')
+            .addText(text => text
+                .setPlaceholder('e.g., 视频简介, Description, Summary')
+                .setValue(this.plugin.settings.descriptionPropertyName || '视频简介')
+                .onChange(async (value) => {
+                    this.plugin.settings.descriptionPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Duration Settings
+        new obsidian.Setting(containerEl)
+            .setName('Enable Duration Update')
+            .setDesc('Turn this on to automatically update the "Duration" property in frontmatter with video duration.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateDuration)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableUpdateDuration = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('Duration Property Name')
+            .setDesc('Customize the frontmatter property name for video duration.')
+            .addText(text => text
+                .setPlaceholder('e.g., 视频时长, Duration, Length')
+                .setValue(this.plugin.settings.durationPropertyName || '视频时长')
+                .onChange(async (value) => {
+                    this.plugin.settings.durationPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+        new obsidian.Setting(containerEl)
+            .setName('Enable Add Description to Note Content')
+            .setDesc('Turn this on to automatically add the video description to the beginning of the note content.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableAddDescriptionToNoteContent)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableAddDescriptionToNoteContent = value;
                     await this.plugin.saveSettings();
                 }));
     }
@@ -110,7 +198,6 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
             id: 'fetch-youtube-metadata',
             name: 'Fetch YouTube Video Info',
             editorCallback: async (editor, view) => {
-                // 1-7. Get active file, frontmatter, link, videoId, apiKey, apiUrl, fetch data (Same as before, no changes needed)
                 const activeFile = this.app.workspace.getActiveFile();
 
                 if (!activeFile) {
@@ -159,17 +246,15 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                         const videoItem = data.items[0];
                         const videoTitle = videoItem.snippet.title;
                         const channelTitle = videoItem.snippet.channelTitle;
-                        const uploadDate = videoItem.snippet.publishedAt; // ISO 8601 format
+                        const uploadDate = videoItem.snippet.publishedAt;
+                        const videoDescription = videoItem.snippet.description;
+                        const videoDurationISO = videoItem.contentDetails.duration;
 
                         new obsidian.Notice(`Data fetched! Title: ${videoTitle}, Author: ${channelTitle}, Date: ${uploadDate}`);
 
-                        // --- Step 3: New Code to Update Note (功能开关控制) ---
-
-                        // 9. Sanitize video title for filename
                         const sanitizedTitle = this.sanitizeFilename(videoTitle);
                         const newFilename = sanitizedTitle + '.md';
 
-                        // 10. Rename the note file (根据开关判断是否执行)
                         if (this.settings.enableRenameNote) {
                             try {
                                 await this.app.fileManager.renameFile(activeFile, newFilename);
@@ -180,18 +265,18 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                             }
                         }
 
-                        // 11. Update frontmatter with Author and Date (根据开关判断是否执行)
-                        if (this.settings.enableUpdateAuthor || this.settings.enableUpdateDate) {
+                        if (this.settings.enableUpdateAuthor || this.settings.enableUpdateDate || this.settings.enableUpdateDescription || this.settings.enableUpdateDuration) {
                             try {
                                 await this.app.fileManager.processFrontMatter(activeFile, (fm) => {
                                     const authorPropertyName = this.settings.authorPropertyName;
                                     const datePropertyName = this.settings.datePropertyName;
+                                    const descriptionPropertyName = this.settings.descriptionPropertyName;
+                                    const durationPropertyName = this.settings.durationPropertyName;
 
                                     if (this.settings.enableUpdateAuthor) {
                                         fm[authorPropertyName] = channelTitle;
                                     }
 
-                                    // --- 日期格式化 ---
                                     const dateFormat = this.settings.dateFormat;
                                     let formattedDate = uploadDate;
 
@@ -216,6 +301,14 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                                     if (this.settings.enableUpdateDate) {
                                         fm[datePropertyName] = formattedDate;
                                     }
+
+                                    if (this.settings.enableUpdateDescription) {
+                                        fm[descriptionPropertyName] = videoDescription;
+                                    }
+
+                                    if (this.settings.enableUpdateDuration) {
+                                        fm[durationPropertyName] = this.formatDuration(videoDurationISO);
+                                    }
                                 });
                                 new obsidian.Notice(`Frontmatter updated based on enabled settings.`);
                             } catch (frontmatterError) {
@@ -223,7 +316,48 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                                 new obsidian.Notice(`Error updating frontmatter. See console for details.`);
                             }
                         } else {
-                            new obsidian.Notice("Note title renamed, but frontmatter update skipped as both 'Update Author' and 'Update Date' are disabled.");
+                            new obsidian.Notice("Note title renamed, but frontmatter update skipped as all frontmatter update options are disabled.");
+                        }
+
+                        if (this.settings.enableAddDescriptionToNoteContent) {
+                            try {
+                                const descriptionContent = `## Video Description\n\n${videoDescription}\n\n---\n\n`; // Format description
+
+                                let currentContent = editor.getValue();
+                                let newContent = descriptionContent + currentContent; // Default to prepend
+
+                                const lines = currentContent.split('\n');
+                                let frontmatterEndLine = -1;
+                                let frontmatterStartFound = false;
+
+                                for (let i = 0; i < lines.length; i++) {
+                                    const line = lines[i].trim();
+                                    if (i === 0 && line === '---') {
+                                        frontmatterStartFound = true; // Found frontmatter start at the first line
+                                    } else if (frontmatterStartFound && line === '---') {
+                                        frontmatterEndLine = i;      // Found the second '---', marking the end
+                                        break;                             // Stop searching after finding the end
+                                    }
+                                }
+
+                                if (frontmatterEndLine !== -1) {
+                                    // Frontmatter found, insert after
+                                    const frontmatterSection = lines.slice(0, frontmatterEndLine + 1).join('\n') + '\n'; // Include '---' line and newline
+                                    const contentAfterFrontmatter = lines.slice(frontmatterEndLine + 1).join('\n');
+
+                                    newContent = frontmatterSection + descriptionContent + contentAfterFrontmatter;
+                                } else {
+                                    // No frontmatter, prepend (fallback)
+                                    newContent = descriptionContent + currentContent;
+                                }
+
+                                editor.setValue(newContent);
+                                new obsidian.Notice('Video description added after frontmatter (robust).'); // Updated notice
+
+                            } catch (contentError) {
+                                console.error('Error adding description to note content after frontmatter (robust):', contentError);
+                                new obsidian.Notice('Error adding description to note content after frontmatter (robust). See console for details.');
+                            }
                         }
 
                     } else {
@@ -263,6 +397,16 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
     sanitizeFilename(title) {
         // Remove or replace characters that are invalid in filenames
         return title.replace(/[/\\?%*:|"<>]/g, '-').trim(); // Replace with dash, trim whitespace
+    }
+
+    formatDuration(isoDuration) {
+        // Simple ISO 8601 duration parsing (improve as needed)
+        const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+        if (!match) return isoDuration; // Handle invalid formats
+        let hours = parseInt(match[1] || '0', 10);
+        let minutes = parseInt(match[2] || '0', 10);
+        let seconds = parseInt(match[3] || '0', 10);
+        return `${hours}h ${minutes}m ${seconds}s`;
     }
 
     async loadSettings() {
