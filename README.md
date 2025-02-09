@@ -21,7 +21,7 @@ Enhance your YouTube video notes with automatic metadata fetching and organizati
 
 ## Installation
 
-1. Install through Obsidian's Community Plugins browser
+1. Install through Obsidian's Community Plugins browser or go to releases https://github.com/RTLiang/Youtube-metadata-fetcher/releases
 2. Enable the plugin in your settings
 3. Configure your YouTube API key in the plugin settings
 
