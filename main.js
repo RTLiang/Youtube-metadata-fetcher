@@ -153,26 +153,26 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
 
         // Description Settings
-        new obsidian.Setting(containerEl)
-            .setName('Enable Description Update')
-            .setDesc('Turn this on to automatically update the "Description" property in frontmatter with video description.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableUpdateDescription)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableUpdateDescription = value;
-                    await this.plugin.saveSettings();
-                }));
+        // new obsidian.Setting(containerEl)
+        //     .setName('Enable Description Update')
+        //     .setDesc('Turn this on to automatically update the "Description" property in frontmatter with video description.')
+        //     .addToggle(toggle => toggle
+        //         .setValue(this.plugin.settings.enableUpdateDescription)
+        //         .onChange(async (value) => {
+        //             this.plugin.settings.enableUpdateDescription = value;
+        //             await this.plugin.saveSettings();
+        //         }));
 
-        new obsidian.Setting(containerEl)
-            .setName('Description Property Name')
-            .setDesc('Customize the frontmatter property name for video description.')
-            .addText(text => text
-                .setPlaceholder('e.g., 视频简介, Description, Summary')
-                .setValue(this.plugin.settings.descriptionPropertyName || '视频简介')
-                .onChange(async (value) => {
-                    this.plugin.settings.descriptionPropertyName = value;
-                    await this.plugin.saveSettings();
-                }));
+        // new obsidian.Setting(containerEl)
+        //     .setName('Description Property Name')
+        //     .setDesc('Customize the frontmatter property name for video description.')
+        //     .addText(text => text
+        //         .setPlaceholder('e.g., 视频简介, Description, Summary')
+        //         .setValue(this.plugin.settings.descriptionPropertyName || '视频简介')
+        //         .onChange(async (value) => {
+        //             this.plugin.settings.descriptionPropertyName = value;
+        //             await this.plugin.saveSettings();
+        //         }));
 
         // Duration Settings
         new obsidian.Setting(containerEl)
