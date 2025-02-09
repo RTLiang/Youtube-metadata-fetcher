@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
     datePropertyName: 'Date',
     descriptionPropertyName: 'description',
     durationPropertyName: 'duration',
+    linkPropertyName: 'YouTube Link', // Add linkPropertyName to default settings
 
     // Feature Toggles
     enableRenameNote: true,
@@ -78,6 +79,41 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     });
             });
 
+        // Link Property Name Setting
+        new obsidian.Setting(containerEl)
+            .setName('YouTube Link Property Name')
+            .setDesc('Customize the frontmatter property name for the YouTube link.')
+            .addText(text => text
+                .setPlaceholder('e.g., link, URL, youtubeLink')
+                .setValue(this.plugin.settings.linkPropertyName || 'YouTube Link')
+                .onChange(async (value) => {
+                    this.plugin.settings.linkPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Feature Toggles
+        new obsidian.Setting(containerEl)
+            .setName('Enable Note Renaming')
+            .setDesc('Turn this on to automatically rename the note to the video title.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableRenameNote)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableRenameNote = value;
+                    await this.plugin.saveSettings();
+                }));
+
+
+        new obsidian.Setting(containerEl)
+            .setName('Enable Author Update')
+            .setDesc('Turn this on to automatically update the "Author" property in frontmatter.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateAuthor)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableUpdateAuthor = value;
+                    await this.plugin.saveSettings();
+                }));
+
+
         // Author Property Name Setting
         new obsidian.Setting(containerEl)
             .setName('Author Property Name')
@@ -87,6 +123,16 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                 .setValue(this.plugin.settings.authorPropertyName || 'Author')
                 .onChange(async (value) => {
                     this.plugin.settings.authorPropertyName = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('Enable Date Update')
+            .setDesc('Turn this on to automatically update the "Date" property in frontmatter.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableUpdateDate)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableUpdateDate = value;
                     await this.plugin.saveSettings();
                 }));
 
@@ -102,36 +148,9 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Feature Toggles
-        new obsidian.Setting(containerEl)
-            .setName('Enable Note Renaming')
-            .setDesc('Turn this on to automatically rename the note to the video title.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableRenameNote)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableRenameNote = value;
-                    await this.plugin.saveSettings();
-                }));
 
-        new obsidian.Setting(containerEl)
-            .setName('Enable Author Update')
-            .setDesc('Turn this on to automatically update the "Author" property in frontmatter.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableUpdateAuthor)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableUpdateAuthor = value;
-                    await this.plugin.saveSettings();
-                }));
 
-        new obsidian.Setting(containerEl)
-            .setName('Enable Date Update')
-            .setDesc('Turn this on to automatically update the "Date" property in frontmatter.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableUpdateDate)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableUpdateDate = value;
-                    await this.plugin.saveSettings();
-                }));
+
 
         // Description Settings
         new obsidian.Setting(containerEl)
@@ -176,6 +195,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                     this.plugin.settings.durationPropertyName = value;
                     await this.plugin.saveSettings();
                 }));
+
         new obsidian.Setting(containerEl)
             .setName('Enable Add Description to Note Content')
             .setDesc('Turn this on to automatically add the video description to the beginning of the note content.')
@@ -212,10 +232,10 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                     return;
                 }
 
-                const youtubeLink = frontmatter['链接'];
+                const youtubeLink = frontmatter[this.settings.linkPropertyName];
 
                 if (!youtubeLink) {
-                    new obsidian.Notice('No "链接" (link) property found in frontmatter!');
+                    new obsidian.Notice(`No "${this.settings.linkPropertyName}" property found in frontmatter!`);
                     return;
                 }
 
@@ -250,17 +270,13 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
                         const videoDescription = videoItem.snippet.description;
                         const videoDurationISO = videoItem.contentDetails.duration;
 
-                        new obsidian.Notice(`Data fetched! Title: ${videoTitle}, Author: ${channelTitle}, Date: ${uploadDate}`);
-
-                        const sanitizedTitle = this.sanitizeFilename(videoTitle);
-                        const newFilename = sanitizedTitle + '.md';
-
                         if (this.settings.enableRenameNote) {
                             try {
-                                await this.app.fileManager.renameFile(activeFile, newFilename);
-                                new obsidian.Notice(`Note renamed to: ${sanitizedTitle}`);
+                                const sanitizedTitle = this.sanitizeFilename(videoTitle);
+                                await this.app.fileManager.renameFile(activeFile, `${sanitizedTitle}.md`);
+                                new obsidian.Notice(`Note renamed to "${sanitizedTitle}.md"`);
                             } catch (renameError) {
-                                console.error('Error renaming file:', renameError);
+                                console.error('Error renaming note:', renameError);
                                 new obsidian.Notice(`Error renaming note. See console for details.`);
                             }
                         }

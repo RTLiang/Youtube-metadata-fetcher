@@ -5,7 +5,7 @@
     "minAppVersion": "1.0.0",
     "description": "Fetches YouTube video metadata (title, author, date) and updates your note.",
     "author": "Raydon Liang",
-    "authorUrl": "",
+    "authorUrl": "https://github.com/RTLiang/Youtube-metadata-fetcher",
     "fundingUrl": "",
     "isDesktopOnly": false
 }

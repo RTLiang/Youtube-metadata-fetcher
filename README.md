@@ -1,56 +1,66 @@
 # YouTube Metadata Fetcher for Obsidian
 
-This Obsidian plugin fetches metadata from YouTube videos and updates the frontmatter of your notes.
+Enhance your YouTube video notes with automatic metadata fetching and organization.
 
-## Features
+## Key Features
 
-* Fetches video title, author, upload date, description, and duration.
-* Updates frontmatter with fetched data (configurable property names).
-* Option to automatically rename the note to the video title.
-* Customizable date format.
-* Requires a YouTube Data API v3 key.
+* **Metadata Extraction:**
+  - Video title, channel name, upload date
+  - Video description and duration
+  - Automatic video ID extraction from URLs
+
+* **Note Organization:**
+  - Automatic note renaming to video title
+  - Customizable frontmatter property names
+  - Option to add description to note content
+
+* **Customization:**
+  - Multiple date format options
+  - Granular control over which metadata to update
+  - Secure API key storage
 
 ## Installation
 
-1.  Download this plugin.
-2.  Place the plugin folder in your Obsidian vault's plugins folder.
-3.  Enable the plugin in Obsidian's settings.
-
-## Configuration
-
-You can configure the plugin's settings through Obsidian's settings panel.  The settings include:
-
-* **YouTube API Key:**  Your YouTube Data API v3 key (required).  This is stored securely.
-* **Date Format:**  The format for the date in the frontmatter (e.g., YYYY-MM-DD, MM-DD-YYYY).
-* **Property Names:**  Customize the names of the frontmatter properties for author, date, description, and duration.
-* **Feature Toggles:** Enable or disable features such as automatic note renaming, updating frontmatter properties, and adding the description to the note content.
+1. Install through Obsidian's Community Plugins browser
+2. Enable the plugin in your settings
+3. Configure your YouTube API key in the plugin settings
 
 ## Usage
 
-1.  Create a note in Obsidian.
-2.  Add the YouTube video link to the frontmatter using the key `链接` (link).  For example:
-    ```yaml
-    ---
-    链接: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-    ---
-    ```
-3.  Run the "Fetch YouTube Video Info" command (available in the command palette).
+1. Create a new note for your YouTube video
+2. Add the YouTube link to your frontmatter:
+```yaml
+---
+YouTube Link: https://www.youtube.com/watch?v=VIDEO_ID
+---
+```
+3. Run the "Fetch YouTube Video Info" command from the command palette
+4. Your note will be updated with the video metadata
 
-## API Key
+## Configuration
 
-To obtain a YouTube Data API v3 key:
+Access settings through Obsidian's settings panel:
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project.
-3. Enable the YouTube Data API v3.
-4. Create an API key.
+* **API Key:** Your YouTube Data API v3 key (required)
+* **Date Format:** Choose from multiple date formats
+* **Property Names:** Customize frontmatter property names
+* **Feature Toggles:** Enable/disable specific metadata updates
 
-Remember to replace `"YOUR_API_KEY"` with your actual API key in the plugin settings.
+## API Key Setup
 
-## Contributing
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project
+3. Enable the YouTube Data API v3
+4. Create an API key
+5. Add the key to the plugin settings
 
-Contributions are welcome! Please open an issue or submit a pull request.
+## Support & Contribution
+
+For support or to contribute:
+* Open an issue on GitHub
+* Submit a pull request
+* Provide feedback on feature requests
 
 ## License
 
-[Specify your license here]
+[MIT License](LICENSE)
