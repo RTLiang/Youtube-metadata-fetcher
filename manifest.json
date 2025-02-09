@@ -3,7 +3,7 @@
     "name": "YouTube Metadata Fetcher",
     "version": "1.0.0",
     "minAppVersion": "1.0.0",
-    "description": "Automatically fetch and organize YouTube video metadata in Obsidian notes.",
+    "description": "Automatically fetch and organize YouTube video metadata in notes.",
     "author": "Raydon Liang",
     "authorUrl": "https://github.com/RTLiang/",
     "fundingUrl": "",
