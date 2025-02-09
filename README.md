@@ -42,7 +42,7 @@ YouTube Link: https://www.youtube.com/watch?v=VIDEO_ID
 Access settings through Obsidian's settings panel:
 
 * **API Key:** Your YouTube Data API v3 key (required)
-* **Date Format:** Choose from multiple date formats
+* **Date Format:** Select from multiple date formats  *(Note: Dataview recognizes YYYY-MM-DD as a Date property type for enhanced functionality)*
 * **Property Names:** Customize frontmatter property names
 * **Feature Toggles:** Enable/disable specific metadata updates
 
