@@ -35,11 +35,11 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'YouTube Metadata Fetcher Settings' });
+        // containerEl.createEl('h2', { text: 'YouTube Metadata Fetcher Settings' });
 
         // API Key Setting
         new obsidian.Setting(containerEl)
-            .setName('YouTube API Key')
+            .setName('YouTube api key')
             .setDesc('Enter your YouTube Data API v3 key here.')
             .addText(text => {
                 text
@@ -54,7 +54,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Date Format Setting
         new obsidian.Setting(containerEl)
-            .setName('Date Format')
+            .setName('Date format')
             .setDesc('Choose the format for the Date in frontmatter.')
             .addDropdown(dropdown => {
                 const today = new Date();
@@ -81,7 +81,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Link Property Name Setting
         new obsidian.Setting(containerEl)
-            .setName('YouTube Link Property Name')
+            .setName('YouTube link property name')
             .setDesc('Customize the frontmatter property name for the YouTube link.')
             .addText(text => text
                 .setPlaceholder('e.g., link, URL, youtubeLink')
@@ -93,7 +93,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Feature Toggles
         new obsidian.Setting(containerEl)
-            .setName('Enable Note Renaming')
+            .setName('Enable note renaming')
             .setDesc('Turn this on to automatically rename the note to the video title.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableRenameNote)
@@ -104,7 +104,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
 
         new obsidian.Setting(containerEl)
-            .setName('Enable Author Update')
+            .setName('Enable author update')
             .setDesc('Turn this on to automatically update the "Author" property in frontmatter.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableUpdateAuthor)
@@ -116,7 +116,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Author Property Name Setting
         new obsidian.Setting(containerEl)
-            .setName('Author Property Name')
+            .setName('Author property name')
             .setDesc('Customize the frontmatter property name for video author/channel.')
             .addText(text => text
                 .setPlaceholder('e.g., 作者, Author, Creator')
@@ -127,7 +127,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                 }));
 
         new obsidian.Setting(containerEl)
-            .setName('Enable Date Update')
+            .setName('Enable date update')
             .setDesc('Turn this on to automatically update the "Date" property in frontmatter.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableUpdateDate)
@@ -138,7 +138,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Date Property Name Setting
         new obsidian.Setting(containerEl)
-            .setName('Date Property Name')
+            .setName('Date property name')
             .setDesc('Customize the frontmatter property name for video upload date.')
             .addText(text => text
                 .setPlaceholder('e.g., 日期, Date, Uploaded')
@@ -176,7 +176,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // Duration Settings
         new obsidian.Setting(containerEl)
-            .setName('Enable Duration Update')
+            .setName('Enable duration update')
             .setDesc('Turn this on to automatically update the "Duration" property in frontmatter with video duration.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableUpdateDuration)
@@ -186,7 +186,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                 }));
 
         new obsidian.Setting(containerEl)
-            .setName('Duration Property Name')
+            .setName('Duration property name')
             .setDesc('Customize the frontmatter property name for video duration.')
             .addText(text => text
                 .setPlaceholder('e.g., 视频时长, Duration, Length')
@@ -197,7 +197,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
                 }));
 
         new obsidian.Setting(containerEl)
-            .setName('Enable Add Description to Note Content')
+            .setName('Enable add description to note content')
             .setDesc('Turn this on to automatically add the video description to the beginning of the note content.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableAddDescriptionToNoteContent)
@@ -216,7 +216,7 @@ module.exports = class YouTubeMetadataFetcher extends obsidian.Plugin {
         // This adds a simple command that you can trigger
         this.addCommand({
             id: 'fetch-youtube-metadata',
-            name: 'Fetch YouTube Video Info',
+            name: 'Fetch youTube video info',
             editorCallback: async (editor, view) => {
                 const activeFile = this.app.workspace.getActiveFile();
 
