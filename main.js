@@ -39,7 +39,7 @@ class YouTubeMetadataFetcherSettingTab extends obsidian.PluginSettingTab {
 
         // API Key Setting
         new obsidian.Setting(containerEl)
-            .setName('YouTube api key')
+            .setName('YouTube API key')
             .setDesc('Enter your YouTube Data API v3 key here.')
             .addText(text => {
                 text
